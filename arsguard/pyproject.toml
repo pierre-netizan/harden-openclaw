@@ -1,0 +1,16 @@
+[project]
+name = "arsguard"
+version = "0.1.0"
+description = "AI Agent 安全加固插件 —— OWASP Top 10 for AI Agents 防护"
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml>=6.0",
+    "jsonschema>=4.0",
+]
+
+[project.scripts]
+arsguard = "arsguard:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

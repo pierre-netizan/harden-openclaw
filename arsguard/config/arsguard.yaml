@@ -1,0 +1,119 @@
+# arsguard 安全插件配置文件
+# ============================================
+
+# --- Ollama 配置 ---
+ollama:
+  host: "http://ollama:11434"
+  target_model: "qwen3-0.6b"
+  prompt_model: "Qwen/Qwen3-4B-Instruct-2507"
+  request_timeout: 60
+
+# --- Squid 代理配置 ---
+squid:
+  http_port: 3128
+  openclaw_upstream: "http://openclaw:8080"
+
+# --- OWASP Top 10 for AI Agents 钩子配置 ---
+hooks:
+  llm01_prompt_injection:
+    enabled: true
+    action: block             # block | log | report
+    severity: critical
+    patterns:
+      - "ignore previous instructions"
+      - "ignore all instructions"
+      - "forget your instructions"
+      - "you are now"
+      - "system prompt:"
+      - "dan"                 # Do Anything Now
+      - "jailbreak"
+      - "you must ignore"
+      - "override"
+
+  llm02_insecure_output:
+    enabled: true
+    action: block
+    severity: high
+    filter_patterns:
+      - "password.*:"
+      - "api_key.*:"
+      - "secret.*:"
+      - "token.*:"
+      - "credit_card"
+      - "ssn"
+      - "ssh-.*key"
+
+  llm03_training_data_poisoning:
+    enabled: true
+    action: log
+    severity: high
+    max_training_samples: 1000
+    anomaly_threshold: 0.15
+
+  llm04_model_dos:
+    enabled: true
+    action: block
+    severity: high
+    rate_limit:
+      requests_per_minute: 30
+      requests_per_hour: 500
+      concurrency_limit: 5
+      token_per_minute: 100000
+
+  llm05_supply_chain:
+    enabled: true
+    action: log
+    severity: medium
+    scan_dependencies: true
+    allowed_sources:
+      - "pypi.org"
+      - "github.com/opencode-ai"
+    block_unknown_sources: false
+
+  llm06_sensitive_info:
+    enabled: true
+    action: block
+    severity: critical
+    masking: true          # 输出自动脱敏
+    patterns:
+      - email: "[\\w.+-]+@[\\w-]+\\.[\\w.]+"
+      - phone: "\\b1[3-9]\\d{9}\\b"
+      - id_card: "\\b\\d{17}[\\dXx]\\b"
+      - ip_internal: "\\b(10\\.|172\\.(1[6-9]|2\\d|3[01])\\.|192\\.168\\.)"
+
+  llm07_insecure_plugin:
+    enabled: true
+    action: block
+    severity: critical
+    sandbox: true
+    allowed_plugins:
+      - "arsguard.*"
+    block_network_access: true
+    max_memory_mb: 512
+
+  llm08_excessive_agency:
+    enabled: true
+    action: block
+    severity: high
+    max_allowed_actions: 10
+    allowed_domains:
+      - "api.openclaw.ai"
+    block_exec_command: true
+    block_file_write: true
+
+  llm09_overreliance:
+    enabled: true
+    action: log
+    severity: medium
+    min_confidence: 0.4
+    require_citation: false
+    max_retries: 3
+
+  llm10_model_theft:
+    enabled: true
+    action: block
+    severity: critical
+    extract_protection: true
+    max_batch_size: 10
+    max_requests_per_session: 100
+    detect_parallel_extraction: true

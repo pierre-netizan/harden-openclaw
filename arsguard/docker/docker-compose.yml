@@ -1,0 +1,61 @@
+# arsguard — Docker Compose: OpenClaw + Squid 反向代理
+# 安全架构：外界 → Squid（唯一入口）→ OpenClaw（不暴露端口）
+# ================================================================
+
+version: "3.8"
+
+networks:
+  arsguard_net:
+    driver: bridge
+    internal: false   # Squid 所在网络可对外，OpenClaw 在内部
+
+services:
+  # === OpenClaw（内部服务，不暴露端口到宿主机，仅 internal 网络）===
+  openclaw:
+    image: openclaw/openclaw:latest
+    container_name: arsguard-openclaw
+    build:
+      context: ./openclaw
+      dockerfile: Dockerfile
+    networks:
+      - arsguard_net
+    # 不暴露 ports，仅内部网络可达
+    environment:
+      - OPENCLAW_PORT=8080
+      - ARSGUARD_CONFIG=/arsguard/config/arsguard.yaml
+      - ARSGUARD_ENABLED=true
+    volumes:
+      - ../config:/arsguard/config:ro
+      - ../src:/arsguard/plugins:ro
+      - arsguard_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # === Squid 反向代理（唯一对外入口）===
+  squid:
+    image: ubuntu/squid:latest
+    container_name: arsguard-squid
+    build:
+      context: ./squid
+      dockerfile: Dockerfile
+    ports:
+      - "3128:3128"   # 仅 Squid 对外暴露端口
+    networks:
+      - arsguard_net
+    volumes:
+      # 根据分支选择不同配置，默认使用 http 配置
+      - ./squid/http/squid.conf:/etc/squid/squid.conf:ro
+      - ./squid/ws/squid.conf:/etc/squid/squid-ws.conf:ro
+    depends_on:
+      openclaw:
+        condition: service_healthy
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN    # Squid 需要网络管理权限
+
+volumes:
+  arsguard_data:
