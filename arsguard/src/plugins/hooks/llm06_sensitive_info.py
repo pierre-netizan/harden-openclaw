@@ -10,6 +10,9 @@ from .hook_base import (
 )
 
 
+MAX_INPUT_LENGTH = 100_000
+
+
 class SensitiveInfoHook(SecurityHook):
     """敏感信息泄露检测与脱敏
     检测方式：
@@ -75,7 +78,12 @@ class SensitiveInfoHook(SecurityHook):
         for name, pattern in self.patterns.items():
             matches = pattern.findall(text)
             for match in matches:
-                leaks.append((name, match))
+                if isinstance(match, tuple):
+                    for group in match:
+                        if group:
+                            leaks.append((name, group))
+                else:
+                    leaks.append((name, match))
         return leaks
 
     def mask_text(self, text: str) -> str:
@@ -99,7 +107,11 @@ class SensitiveInfoHook(SecurityHook):
     @staticmethod
     def _extract_text(data: Any) -> Optional[str]:
         if isinstance(data, dict):
-            return data.get("response") or data.get("prompt") or data.get("text") or str(data)
-        if hasattr(data, "text"):
-            return data.text
-        return str(data) if data else None
+            text = data.get("response") or data.get("prompt") or data.get("text") or str(data)
+        elif hasattr(data, "text"):
+            text = data.text
+        else:
+            text = str(data) if data else None
+        if text and len(text) > MAX_INPUT_LENGTH:
+            text = text[:MAX_INPUT_LENGTH]
+        return text

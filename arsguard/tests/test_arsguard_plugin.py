@@ -48,14 +48,14 @@ class TestArsguardPlugin:
         assert result is None
 
     def test_response_interception(self, plugin):
+        # All 10 hooks are registered by default; InsecureOutputHook catches XSS
         result = plugin.on_response({"response": "<script>alert(1)</script>"}, {})
-        # InsecureOutputHook is not registered in this test, so should be None
-        # Actually, the default test plugin only has prompt_injection and model_dos
-        assert result is None
+        assert result is not None
+        assert result.get("intercepted") is True
 
     def test_get_stats(self, plugin):
         stats = plugin.get_stats()
         assert stats["enabled"] is True
-        assert stats["hooks_enabled"] >= 2
-        assert stats["hooks_total"] >= 2
+        assert stats["hooks_enabled"] == 10
+        assert stats["hooks_total"] == 10
         assert stats["total_blocks"] >= 0

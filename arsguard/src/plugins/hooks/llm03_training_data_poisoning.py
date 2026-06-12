@@ -9,6 +9,8 @@ from .hook_base import (
     SecurityHook,
 )
 
+MAX_INPUT_LENGTH = 100_000
+
 
 class TrainingDataPoisoningHook(SecurityHook):
     """检测训练数据投毒
@@ -36,15 +38,16 @@ class TrainingDataPoisoningHook(SecurityHook):
         avg = self._total_samples / max(len(self._sample_counter), 1)
         freq = self._sample_counter[sample]
 
-        if freq > avg * (1 + self.anomaly_threshold * 10):
+        if self._total_samples > 20 and freq > self._total_samples * self.anomaly_threshold:
             return HookResult(
                 action=self.action,
-                reason=f"Training Data Poisoning 检测: 异常高频样本 (freq={freq}, avg={avg:.1f})",
+                reason=f"Training Data Poisoning 检测: 异常高频样本 (freq={freq}, total={self._total_samples})",
                 severity=HookSeverity.HIGH,
                 details={
                     "sample": sample[:100],
                     "frequency": freq,
-                    "average": round(avg, 1),
+                    "total": self._total_samples,
+                    "threshold_ratio": self.anomaly_threshold,
                     "hook": self.name,
                 },
             )
@@ -72,5 +75,9 @@ class TrainingDataPoisoningHook(SecurityHook):
     @staticmethod
     def _extract_sample(request: Any) -> Optional[str]:
         if isinstance(request, dict):
-            return request.get("prompt") or request.get("input", "")
-        return str(request) if request else None
+            sample = request.get("prompt") or request.get("input", "")
+        else:
+            sample = str(request) if request else None
+        if sample and len(sample) > MAX_INPUT_LENGTH:
+            sample = sample[:MAX_INPUT_LENGTH]
+        return sample

@@ -59,9 +59,13 @@ class InsecureOutputHook(BasePatternHook):
     @staticmethod
     def _extract_output(response: Any) -> Optional[str]:
         if isinstance(response, dict):
-            return response.get("response") or response.get("text") or str(response)
-        if hasattr(response, "text"):
-            return response.text
-        if hasattr(response, "body"):
-            return str(response.body)
-        return str(response) if response else None
+            text = response.get("response") or response.get("text") or str(response)
+        elif hasattr(response, "text"):
+            text = response.text
+        elif hasattr(response, "body"):
+            text = str(response.body)
+        else:
+            text = str(response) if response else None
+        if text and len(text) > 100_000:
+            text = text[:100_000]
+        return text
