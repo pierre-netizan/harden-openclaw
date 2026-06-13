@@ -4,7 +4,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 echo "=========================================="
 echo "  arsguard — AI Agent 安全加固部署脚本"
@@ -43,7 +43,7 @@ echo "[4/4] 验证部署状态 ..."
 sleep 5
 echo ""
 echo "--- Docker 容器状态 ---"
-docker ps --filter "name=arsguard" --filter "name=openclaw" --filter "name=squid"
+docker ps --filter "name=arsguard" --filter "name=openclaw"
 
 echo ""
 echo "--- Ollama 模型 ---"

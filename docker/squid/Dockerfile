@@ -3,7 +3,6 @@ FROM ubuntu:22.04
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         squid \
-        squid-openssl \
         apache2-utils \
         && rm -rf /var/lib/apt/lists/*
 

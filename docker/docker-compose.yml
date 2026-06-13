@@ -2,13 +2,6 @@
 # 安全架构：外界 → Squid（唯一入口）→ OpenClaw（不暴露端口）
 # ================================================================
 
-version: "3.8"
-
-networks:
-  arsguard_net:
-    driver: bridge
-    internal: false   # Squid 所在网络可对外，OpenClaw 在内部
-
 services:
   # === OpenClaw（内部服务，不暴露端口到宿主机，仅 internal 网络）===
   openclaw:
@@ -19,14 +12,17 @@ services:
       dockerfile: Dockerfile
     networks:
       - arsguard_net
-    # 不暴露 ports，仅内部网络可达
+    ports:
+      - "127.0.0.1:8080:8080"   # 仅 localhost 暴露（Control UI）
+      - "127.0.0.1:9091:9090"   # 仅 localhost 暴露（arsguard 仪表盘）
+    # 不暴露到外部网络，仅内部网络 + localhost 调试
     environment:
       - OPENCLAW_PORT=8080
       - ARSGUARD_CONFIG=/arsguard/config/arsguard.yaml
       - ARSGUARD_ENABLED=true
     volumes:
-      - ../config:/arsguard/config:ro
-      - ../src:/arsguard/plugins:ro
+      - ../arsguard/config:/arsguard/config:ro
+      - ../arsguard/src:/arsguard/plugins:ro
       - arsguard_data:/data
     restart: unless-stopped
     healthcheck:
@@ -56,6 +52,10 @@ services:
     restart: unless-stopped
     cap_add:
       - NET_ADMIN    # Squid 需要网络管理权限
+
+networks:
+  arsguard_net:
+    driver: bridge
 
 volumes:
   arsguard_data:
