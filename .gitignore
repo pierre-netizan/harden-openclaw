@@ -1,0 +1,8 @@
+conversations/
+data-bk*/
+data-results/
+eval/data/
+eval/data-bk*/
+[0-9]*.md
+ctx.md
+需求清单.md
