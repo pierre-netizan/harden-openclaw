@@ -1,0 +1,9 @@
+[submodule "arsguard"]
+	path = arsguard
+	url = https://github.com/pierre-netizan/arsguard.git
+	branch = main
+
+[submodule "eval"]
+	path = eval
+	url = https://github.com/pierre-netizan/eval.git
+	branch = main
