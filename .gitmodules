@@ -7,3 +7,6 @@
 	path = eval
 	url = https://github.com/pierre-netizan/eval.git
 	branch = main
+[submodule "webui"]
+	path = webui
+	url = git@github.com:pierre-netizan/arsguard-webui.git
